@@ -20,7 +20,8 @@ def is_valid_path(path):
     return os.path.exists(path) and os.access(path, os.R_OK)
 
 def is_singularity_installed(path=None):
-    """This function is used to check whether singularity is availble on the target system. 
+    print('is_singularity_installed', path)
+    """This function is used to check whether singularity is availble on the target system.
     This function is useful to make sure that singularity is accessible from a SLURM job submitted to HiperGator
 
     Args:
@@ -31,11 +32,12 @@ def is_singularity_installed(path=None):
     """
     try:
         if path and is_valid_path(path):
+            print('is_singularity_installed ~ 1', path)
             os.chdir(path)
     except Exception:
         logger.exception(f'{path} is not a valid path')
         raise Exception(
-            f'{path} is not a valid path'   
+            f'{path} is not a valid path'
         )
     try:
         subprocess.run(SingularityCommands.singularity_version(), check=True)
@@ -45,12 +47,12 @@ def is_singularity_installed(path=None):
 
 def find_local_singularity_image(name:str,path=''):
     '''
-    Check if the image is present locally on the system in a specified path. For our usecase, we insall the images to a specific path on /blue directory, which can be modified 
+    Check if the image is present locally on the system in a specified path. For our usecase, we insall the images to a specific path on /blue directory, which can be modified
     via the argument to the function
 
     Args:
         name(str, required) - The name of the docker image with the tag <image>:<tag>.
-        path(str, optional) - This path refers to the path on the local file system designated for placing singularity images after they are pulled from the interweb. 
+        path(str, optional) - This path refers to the path on the local file system designated for placing singularity images after they are pulled from the interweb.
     Returns:
     bool: True if the singularity image is avaialble on the given path on the local host system. False otherwise.
 
@@ -74,7 +76,7 @@ def pull_image_and_convert_to_sif(names):
     names(List(str), required) -> The list of image names of the format <img>:<tag> provided as a string
 
     Raises:
-    If pulling of any of the images fails, the function raises an error with the list of images that failed. 
+    If pulling of any of the images fails, the function raises an error with the list of images that failed.
     '''
     failedImageList  = []
     for name in names:
@@ -87,7 +89,7 @@ def pull_image_and_convert_to_sif(names):
     if len(failedImageList) != 0:
         raise DockerImageNotFoundError('Could not find multiple images ',
                                        image_name=failedImageList)
-    
+
 def load_meta_data_for_singularity(job,pullList, loadList, notExistSet):
     # flag to indicate an error occurred
     errorState = False
@@ -133,7 +135,7 @@ def load_meta_data_for_singularity(job,pullList, loadList, notExistSet):
 
 def get_cli_data_for_singularity(name,job):
     try:
-        #We want to mimic the behaviour of docker run <img>:<tag> --list_cli in singularity 
+        #We want to mimic the behaviour of docker run <img>:<tag> --list_cli in singularity
         cli_dict = get_local_singularity_output(name, '--list_cli')
         # contains nested dict
         # {<cliname>:{type:<type>}}
@@ -162,7 +164,7 @@ def get_cli_data_for_singularity(name,job):
 def _get_last_workdir(imageName):
     run_parameters = '--no-mount /cmsuf'
     cmd = SingularityCommands.singularity_get_env(image=imageName,run_parameters=run_parameters)
-    try: 
+    try:
         res = subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
         res = res.stdout
         if isinstance(res,bytes):
@@ -178,7 +180,7 @@ def _get_last_workdir(imageName):
 
 def get_local_singularity_output(imgName, cmdArg:str):
     """
-    This function is used to run the singularity command locally for non-resource intensive tasks such as getting schema, environment variables and so on and return that output to the calling function 
+    This function is used to run the singularity command locally for non-resource intensive tasks such as getting schema, environment variables and so on and return that output to the calling function
     """
     try:
         pwd = _get_last_workdir(imgName)
@@ -192,10 +194,10 @@ def get_local_singularity_output(imgName, cmdArg:str):
     except Exception as e:
         raise Exception(f'error occured {e}')
 
-        
+
 def get_singularity_image_object(image):
     '''
-    This function is used to perform the same functionality as the docker_client.images.get(img) function. 
+    This function is used to perform the same functionality as the docker_client.images.get(img) function.
     '''
     sif_name = generate_image_name_for_singularity(image)
     Singularity

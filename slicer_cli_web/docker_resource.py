@@ -212,6 +212,7 @@ class DockerResource(Resource):
         return self._createPutImageJob(nameList, folder, params.get('pull', None))
 
     def _createPutImageJob(self, nameList, baseFolder, pull=False):
+        print('_createPutImageJob', nameList, baseFolder, pull)
         job = Job().createLocalJob(
             module='slicer_cli_web.image_job',
             function='jobPullAndLoad',
@@ -226,6 +227,7 @@ class DockerResource(Resource):
             public=True,
             asynchronous=True
         )
+        print('_createPutImageJob', job)
         Job().scheduleJob(job)
         return job
 
@@ -244,6 +246,7 @@ class DockerResource(Resource):
         :type cliName: string
         """
         img = self.currentEndpoints.setdefault(imgName, {})
+        print('storeEndpoints', img)
         img[cliName] = undoFunction
 
     def deleteImageEndpoints(self, imageList=None):

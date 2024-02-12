@@ -39,6 +39,7 @@ def deleteImage(job):
     the local machine
 
     """
+    print("deleteImage", job)
     job = Job().updateJob(
         job,
         log='Started to Delete Docker images\n',
@@ -53,6 +54,7 @@ def deleteImage(job):
             docker_client = docker.from_env(version='auto')
 
         except docker.errors.DockerException as err:
+            print("deleteImage ~ 1", err)
             logger.exception('Could not create the docker client')
             job = Job().updateJob(
                 job,
@@ -115,6 +117,7 @@ def findLocalImage(client, name):
     return image.id
 
 def jobPullAndLoad(job):
+    print("jobPullAndLoad", job)
     """
     Attempts to cache metadata on images in the pull list and load list.
     Images in the pull list are pulled first, then images in both lists are
@@ -141,18 +144,20 @@ def jobPullAndLoad(job):
         errorState = False
 
         notExistSet = set()
+        print("jobPullAndLoad ~ 2", user, baseFolder, loadList)
         try:
             is_singularity_installed()
+            print("jobPullAndLoad ~ 3")
         except:
             logger.exception('Singularity is not available. Please try after installing singularity')
             raise Exception(f'Singularity is not available. Please try after installing singularity')
-        
+
         pullList = [
             name for name in loadList
             if not find_local_singularity_image(name) or
             str(job['kwargs'].get('pull')).lower() == 'true']
         loadList = [name for name in loadList if name not in pullList]
-
+        print("jobPullAndLoad ~ 4", pullList, loadList)
         try:
             stage = 'pulling'
             pull_image_and_convert_to_sif(pullList)
@@ -171,6 +176,7 @@ def jobPullAndLoad(job):
             singularity_image_object = SingularityImage(name)
             stage = 'parsing'
             SingularityImageItem.saveImage(name, cli_dict, singularity_image_object, user, baseFolder)
+        print("jobPullAndLoad ~ 5", errorState, loadingError)
         if errorState is False and loadingError is False:
             newStatus = JobStatus.SUCCESS
         else:
@@ -182,7 +188,9 @@ def jobPullAndLoad(job):
             notify=True,
             progressMessage='Completed caching docker images'
         )
+        print("jobPullAndLoad ~ 6", job)
     except Exception as err:
+        print("jobPullAndLoad ~ 7", err)
         logger.exception('Error with job with %s', stage)
         job = Job().updateJob(
             job,
