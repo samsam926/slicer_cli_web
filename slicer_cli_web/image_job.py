@@ -132,7 +132,7 @@ def jobPullAndLoad(job):
     try:
         job = Job().updateJob(
             job,
-            log='Started to Load Docker images\n',
+            log='1.1 \n',
             status=JobStatus.RUNNING,
         )
         user = User().load(job['userId'], level=AccessType.READ)
@@ -144,10 +144,10 @@ def jobPullAndLoad(job):
         errorState = False
 
         notExistSet = set()
-        print("jobPullAndLoad ~ 2", user, baseFolder, loadList)
+        logger.info("jobPullAndLoad ~ 2", user, baseFolder, loadList)
         try:
             is_singularity_installed()
-            print("jobPullAndLoad ~ 3")
+            logger.debug("jobPullAndLoad ~ 3")
         except:
             logger.exception('Singularity is not available. Please try after installing singularity')
             raise Exception(f'Singularity is not available. Please try after installing singularity')

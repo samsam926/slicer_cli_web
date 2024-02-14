@@ -98,7 +98,7 @@ def check_local_sif_image(image):
     """
     #Image path - Image path has to be present in tmp/images folder
     if not image:
-        logger.write('Image name cannot be empty')
+        logger.exception('Image name cannot be empty')
         return False
     #Just for testing. Change it later...
     return False
@@ -114,5 +114,5 @@ def run(task, *args, **kwargs):
     if pull_image == 'if-not-present':
         kwargs['pull_image'] = not check_local_sif_image(kwargs['image'])
     image = kwargs.get('image','')
-    logger.write('LOG!! Sending job to girder_worker!!')
+    logger.info('LOG!! Sending job to girder_worker!!')
     return singularity_run(task,image,*args **kwargs)
