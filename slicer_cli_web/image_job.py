@@ -147,7 +147,7 @@ def jobPullAndLoad(job):
             logger.exception('Could not create the docker client')
             job = Job().updateJob(
                 job,
-                log='Failed to create the Docker Client\n' + str(err) + '\n',
+                log='Failed to create the Docker Client 1.1v!!\n' + str(err) + '\n',
             )
             raise DockerImageError('Could not create the docker client')
 

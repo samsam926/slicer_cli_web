@@ -41,6 +41,7 @@ class DockerResource(Resource):
     """
     Resource object that handles runtime generation and deletion of rest
     endpoints
+    Modified to have Singularity support. 'Not a complete version for community yet, just customized for use by SarderLab
     """
 
     jobType = 'slicer_cli_web_job'
@@ -185,7 +186,7 @@ class DockerResource(Resource):
 
     @access.admin
     @describeRoute(
-        Description('Add one or a list of images')
+        Description('Add one or a list of images v1.1')
         .notes('Must be a system administrator to call this.')
         .param('name', 'A name or a list of names of the docker images to be '
                'loaded', required=True)
@@ -219,7 +220,7 @@ class DockerResource(Resource):
                 'folder': baseFolder['_id'] if isinstance(baseFolder, dict) else baseFolder,
                 'pull': pull,
             },
-            title='Pulling and caching docker images',
+            title='Pulling and caching docker images v1.1',
             type=self.jobType,
             user=self.getCurrentUser(),
             public=True,
