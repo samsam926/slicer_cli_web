@@ -37,66 +37,7 @@ def deleteImage(job):
     the local machine
 
     """
-    job = Job().updateJob(
-        job,
-        log='Started to Delete Docker images\n',
-        status=JobStatus.RUNNING,
-    )
-    docker_client = None
-    try:
-        deleteList = job['kwargs']['deleteList']
-        error = False
 
-        try:
-            docker_client = docker.from_env(version='auto')
-
-        except docker.errors.DockerException as err:
-            logger.exception('Could not create the docker client')
-            job = Job().updateJob(
-                job,
-                log='Failed to create the Docker Client\n' + str(err) + '\n',
-                status=JobStatus.ERROR,
-            )
-            raise DockerImageError('Could not create the docker client')
-
-        for name in deleteList:
-            try:
-                docker_client.images.remove(name, force=True)
-
-            except Exception as err:
-                logger.exception('Failed to remove image')
-                job = Job().updateJob(
-                    job,
-                    log='Failed to remove image \n' + str(err) + '\n',
-                )
-                error = True
-        if error is True:
-            job = Job().updateJob(
-                job,
-                log='Failed to remove some images',
-                status=JobStatus.ERROR,
-                notify=True,
-                progressMessage='Errors deleting some images'
-            )
-        else:
-            job = Job().updateJob(
-                job,
-                log='Removed all images',
-                status=JobStatus.SUCCESS,
-                notify=True,
-                progressMessage='Removed all images'
-            )
-    except Exception as err:
-        logger.exception('Error with job')
-        job = Job().updateJob(
-            job,
-            log='Error with job \n ' + str(err) + '\n',
-            status=JobStatus.ERROR,
-
-        )
-    finally:
-        if docker_client:
-            docker_client.close()
 
 
 def findLocalImage(client, name):
@@ -125,75 +66,6 @@ def jobPullAndLoad(job):
     related
     """
     stage = 'initializing'
-    try:
-        job = Job().updateJob(
-            job,
-            log='Started to Load Docker images\n',
-            status=JobStatus.RUNNING,
-        )
-        user = User().load(job['userId'], level=AccessType.READ)
-        baseFolder = Folder().load(
-            job['kwargs']['folder'], user=user, level=AccessType.WRITE, exc=True)
-
-        loadList = job['kwargs']['nameList']
-
-        errorState = False
-
-        notExistSet = set()
-        try:
-            docker_client = docker.from_env(version='auto')
-
-        except docker.errors.DockerException as err:
-            logger.exception('Could not create the docker client')
-            job = Job().updateJob(
-                job,
-                log='Failed to create the Docker Client 1.1v!!\n' + str(err) + '\n',
-            )
-            raise DockerImageError('Could not create the docker client')
-
-        pullList = [
-            name for name in loadList
-            if not findLocalImage(docker_client, name) or
-            str(job['kwargs'].get('pull')).lower() == 'true']
-        loadList = [name for name in loadList if name not in pullList]
-
-        try:
-            stage = 'pulling'
-            pullDockerImage(docker_client, pullList)
-        except DockerImageNotFoundError as err:
-            errorState = True
-            notExistSet = set(err.imageName)
-            job = Job().updateJob(
-                job,
-                log='FAILURE: Could not find the following images\n' + '\n'.join(
-                    notExistSet) + '\n',
-            )
-        stage = 'metadata'
-        images, loadingError = loadMetadata(job, docker_client, pullList,
-                                            loadList, notExistSet)
-        for name, cli_dict in images:
-            docker_image = docker_client.images.get(name)
-            stage = 'parsing'
-            DockerImageItem.saveImage(name, cli_dict, docker_image, user, baseFolder)
-        if errorState is False and loadingError is False:
-            newStatus = JobStatus.SUCCESS
-        else:
-            newStatus = JobStatus.ERROR
-        job = Job().updateJob(
-            job,
-            log='Finished caching Docker image data\n',
-            status=newStatus,
-            notify=True,
-            progressMessage='Completed caching docker images'
-        )
-    except Exception as err:
-        logger.exception('Error with job with %s', stage)
-        job = Job().updateJob(
-            job,
-            log='Error with job with %s\n %s\n' % (stage, err),
-            status=JobStatus.ERROR,
-        )
-
 
 def loadMetadata(job, docker_client, pullList, loadList, notExistSet):
     """
