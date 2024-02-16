@@ -383,7 +383,7 @@ def genHandlerToRunDockerCLI(cliItem):  # noqa C901
         :param datalist: if not None, an object with keys that override
             parameters.  No outputs are used.
         """
-        from .girder_worker_plugin.direct_docker_run import run
+        from .girder_worker_plugin.direct_singularity_run import run
 
         original_params = copy.deepcopy(params)
         if hasattr(getCurrentToken, 'set'):

@@ -25,6 +25,8 @@ from girder.models.folder import Folder
 from girder.models.user import User
 from girder_jobs.constants import JobStatus
 from girder_jobs.models.job import Job
+from .singularity.job import is_singularity_installed,find_local_singularity_image,pull_image_and_convert_to_sif,load_meta_data_for_singularity
+from .models.singularity_image import SingularityImage, SingularityImageItem
 
 from .models import DockerImageError, DockerImageItem, DockerImageNotFoundError
 
@@ -112,7 +114,6 @@ def findLocalImage(client, name):
         return None
     return image.id
 
-
 def jobPullAndLoad(job):
     """
     Attempts to cache metadata on images in the pull list and load list.
@@ -134,32 +135,27 @@ def jobPullAndLoad(job):
         user = User().load(job['userId'], level=AccessType.READ)
         baseFolder = Folder().load(
             job['kwargs']['folder'], user=user, level=AccessType.WRITE, exc=True)
-
+        logger.info(f"names = {job['kwargs']['nameList']}")
         loadList = job['kwargs']['nameList']
 
         errorState = False
 
         notExistSet = set()
         try:
-            docker_client = docker.from_env(version='auto')
-
-        except docker.errors.DockerException as err:
-            logger.exception('Could not create the docker client')
-            job = Job().updateJob(
-                job,
-                log='Failed to create the Docker Client\n' + str(err) + '\n',
-            )
-            raise DockerImageError('Could not create the docker client')
-
+            is_singularity_installed()
+        except:
+            logger.exception('Singularity is not available. Please try after installing singularity')
+            raise Exception(f'Singularity is not available. Please try after installing singularity')
+        
         pullList = [
             name for name in loadList
-            if not findLocalImage(docker_client, name) or
+            if not find_local_singularity_image(name) or
             str(job['kwargs'].get('pull')).lower() == 'true']
         loadList = [name for name in loadList if name not in pullList]
 
         try:
             stage = 'pulling'
-            pullDockerImage(docker_client, pullList)
+            pull_image_and_convert_to_sif(pullList)
         except DockerImageNotFoundError as err:
             errorState = True
             notExistSet = set(err.imageName)
@@ -169,12 +165,12 @@ def jobPullAndLoad(job):
                     notExistSet) + '\n',
             )
         stage = 'metadata'
-        images, loadingError = loadMetadata(job, docker_client, pullList,
+        images, loadingError = load_meta_data_for_singularity(job, pullList,
                                             loadList, notExistSet)
         for name, cli_dict in images:
-            docker_image = docker_client.images.get(name)
+            singularity_image_object = SingularityImage(name)
             stage = 'parsing'
-            DockerImageItem.saveImage(name, cli_dict, docker_image, user, baseFolder)
+            SingularityImageItem.saveImage(name, cli_dict, singularity_image_object, user, baseFolder)
         if errorState is False and loadingError is False:
             newStatus = JobStatus.SUCCESS
         else:
@@ -221,7 +217,6 @@ def loadMetadata(job, docker_client, pullList, loadList, notExistSet):
             job = Job().updateJob(
                 job,
                 log='Image %s was pulled successfully \n' % name,
-
             )
 
             try:

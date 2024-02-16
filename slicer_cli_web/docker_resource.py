@@ -41,6 +41,7 @@ class DockerResource(Resource):
     """
     Resource object that handles runtime generation and deletion of rest
     endpoints
+    Modified to have Singularity support. 'Not a complete version for community yet, just customized for use by SarderLab
     """
 
     jobType = 'slicer_cli_web_job'
