@@ -26,7 +26,7 @@ setup(
     name='girder-slicer-cli-web',
     use_scm_version={
         'local_scheme': prerelease_local_scheme,
-        'fallback_version': '0.0.0'},
+        'fallback_version': '1.5.3'},
     setup_requires=[
         'setuptools-scm',
     ],
